@@ -52,7 +52,9 @@ RESULT_DIR = joinpath(MYPATH, r'../../fortran_tests/test_results/')
 RESULT_FILE = joinpath(RESULT_DIR, r'expected_results')
 FAILED_FILE = joinpath(RESULT_DIR, r'failed_results')
 
-RUNSCRIPT = joinpath(MYPATH, r"../../fprettify.py")
+RUNSCRIPT = [joinpath(MYPATH, r"../../fprettify.py")]
+if os.name == "nt":
+    RUNSCRIPT = ["python", *RUNSCRIPT]
 
 fprettify.set_fprettify_logger(logging.ERROR)
 
@@ -243,11 +245,11 @@ class FPrettifyTestCase(unittest.TestCase):
         assert that result of calling fprettify with args on instring gives
         outstring_exp
         """
-        args.insert(0, RUNSCRIPT)
+        args = RUNSCRIPT + args
         p1 = subprocess.Popen(
             args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         outstring = p1.communicate(instring.encode(
-            'UTF-8'))[0].decode('UTF-8').rstrip()
+            'UTF-8'))[0].decode('UTF-8').replace("\r", "").rstrip()
         self.assertEqual(outstring_exp.rstrip(), outstring)
 
     def test_io(self):
@@ -274,13 +276,13 @@ class FPrettifyTestCase(unittest.TestCase):
                 instring.encode('UTF-8'))[0].decode('UTF-8'))
 
             # testing file --> stdout
-            p1 = subprocess.Popen([RUNSCRIPT, alien_file, '--stdout'],
+            p1 = subprocess.Popen([*RUNSCRIPT, alien_file, '--stdout'],
                                   stdout=subprocess.PIPE)
             outstring.append(p1.communicate(
                 instring.encode('UTF-8')[0])[0].decode('UTF-8'))
 
             # testing file --> file (inplace)
-            p1 = subprocess.Popen([RUNSCRIPT, alien_file])
+            p1 = subprocess.Popen([*RUNSCRIPT, alien_file])
             p1.wait()
 
             with io.open(alien_file, 'r', encoding='utf-8') as infile:
